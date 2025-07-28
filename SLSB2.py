@@ -15,7 +15,7 @@ def insert(img, message, ss1, ss2, numberOfBlocks):
     # img to binary
     start = time.perf_counter()
     binary_img = np.vectorize(lambda x: format(x, '08b'))(flattenImg)
-    print('Converted flattened image to binary')                                                                               # VERBOSE
+    print('Converted flattened image to binary')
     end = time.perf_counter()
     print(f'Time taken to convert image to binary: {(end - start):.3f} seconds')                                                     # VERBOSE
 

@@ -1,0 +1,5 @@
+1. the program runs slower due to binary conversion of image (this is a bigger problem)
+
+2. performing basic image encryption before embedding message and then decrypting the image before saving it can enhance the security
+
+3. 
