@@ -4,10 +4,7 @@ import numpy as np
 import random as rm
 
 def encrypt_img(img, key):
-    """
-    Encrypt image by shuffling pixels based on a key.
-    No permutation is returned — key must be reused for decryption.
-    """
+    """Encrypt image by shuffling pixels based on a key."""
     h, w, c = img.shape
     flat = img.reshape(-1, c)
 
@@ -17,9 +14,7 @@ def encrypt_img(img, key):
     return shuffled.reshape(h, w, c)
 
 def decrypt_img(scrambled_img, key):
-    """
-    Decrypt image that was shuffled using the same key.
-    """
+    """Decrypt image that was shuffled using the same key."""
     h, w, c = scrambled_img.shape
     flat = scrambled_img.reshape(-1, c)
 
@@ -33,7 +28,6 @@ def decrypt_img(scrambled_img, key):
 def insert(image, message, ss1, ss2, numberOfBlocks):
     height, width, channel = image.shape
     img_size = height*width
-    print(f'Image - height: {height} width: {width} channel: {channel} \nimage Size: {img_size}')                               # VERBOSE
     
     opEnc = input("Encrypt image (y/n): ").lower()
     if opEnc == "y":
@@ -41,30 +35,31 @@ def insert(image, message, ss1, ss2, numberOfBlocks):
         img = encrypt_img(image, key)
         print("encrypted")
     elif opEnc == "n":
+        img = image
         print("encryption skipped")
 
     # 3d to 1d matrix
+    print('Flattening the Image from 3D to 1D', end="", flush=True)                                                                                 # VERBOSE
     flattenImg = img.flatten()
-    print('Flattened the Image from 3D to 1D')                                                                                 # VERBOSE
+    time.sleep(1)  # Adding a small delay for better readability in output
 
     # img to binary
-    start = time.perf_counter()
+    print('\rConverting flattened image to binary', end="", flush=True)                                                                               # VERBOSE
     binary_img = np.vectorize(lambda x: format(x, '08b'))(flattenImg)
-    print('Converted flattened image to binary')                                                                               # VERBOSE
-    end = time.perf_counter()
-    print(f'Time taken to convert image to binary: {(end - start):.3f} seconds')                                                     # VERBOSE
+    time.sleep(1)  # Adding a small delay for better readability in output
 
     # text to binary
+    print("\rConverting text to binary           ", end="", flush=True)                                                                                                       # VERBOSE
     binary_msg = [format(ord(c), "08b") for c in message]
     msg_length = len(binary_msg)
-    print("Converted text to binary")
+    time.sleep(1)  # Adding a small delay for better readability in output
 
     # assigning values for the PK component
     startPOS = int(ss1*img_size) + int(ss2*img_size)        # starting position in the image
     block_size = int(msg_length/numberOfBlocks)               # size of msg block 
     lastMsgBlock = msg_length - block_size * numberOfBlocks
-    print('\nEntering insertion loop')                                                                                                   # VERBOSE
     
+    start = time.perf_counter()
     for i in range(numberOfBlocks):
         if block_size == 0:
             continue
@@ -118,13 +113,12 @@ def insert(image, message, ss1, ss2, numberOfBlocks):
         lastImgBlock_1d = np.array([''.join(map(str, row)) for row in lastImgBlock_2d])
 
         binary_img[startRange:endRange] = lastImgBlock_1d
+        end = time.perf_counter()
+        print(f"\nTime taken to insert message: {(end - start):.5f} seconds")                                                                 # VERBOSE
 
         # Converting binary image to image
-        start = time.perf_counter()
         pixel_values = np.array([int(pixel, 2) for pixel in binary_img], dtype=np.uint8)
-        image = pixel_values.reshape((height, width, channel))
-        end = time.perf_counter()
-        print(f'Time taken to convert binary image back to pixel values: {(end - start):.3f} seconds')                                                     # VERBOSE
+        image = pixel_values.reshape((height, width, channel))    
 
         if opEnc == "y":
             image = decrypt_img(image, key)
@@ -139,7 +133,6 @@ def insert(image, message, ss1, ss2, numberOfBlocks):
 def extract(image, xss1, xss2, xnumberOfBlocks, msg_length):    
     height, width, channel = image.shape
     img_size = height*width
-    print(f'Image - height: {height} width: {width} channel: {channel} \nimage Size: {img_size}')                               # VERBOSE
 
     opEnc = input("Encrypt image (y/n): ").lower()
     if opEnc == "y":
@@ -148,21 +141,20 @@ def extract(image, xss1, xss2, xnumberOfBlocks, msg_length):
         print("encrypted")
 
     # 3d to 1d matrix
+    print('Flattening the Image from 3D to 1D', end="", flush=True)                                                                                 # VERBOSE
     flattenImg = img.flatten()
-    print('Flattened the Image from 3D to 1D')                                                                                 # VERBOSE                                                                                     # VERBOSE
+    time.sleep(1)  # Adding a small delay for better readability in output
 
     # img to binary
-    start = time.perf_counter()
+    print('\rConverting flattened image to binary', end="", flush=True)
     binary_img = np.vectorize(lambda x: format(x, '08b'))(flattenImg)
-    print('Converted flattened image to binary')
-    end = time.perf_counter()
-    print(f'Time taken to convert image to binary: {(end - start):.3f} seconds')                                                     # VERBOSE
+    time.sleep(1)  # Adding a small delay for better readability in output
 
     xstartPOS = int(xss1*img_size) + int(xss2*img_size)        # starting position in the image
     xblock_size = int(msg_length/xnumberOfBlocks)               # size of msg block 
     xlastMsgBlock = msg_length - xblock_size * xnumberOfBlocks
 
-    print('\nEntering extraction loop')                                                                                                      # VERBOSE
+    start = time.perf_counter()
     dmes = []
     for i in range(xnumberOfBlocks):
         # get the image block
@@ -201,6 +193,8 @@ def extract(image, xss1, xss2, xnumberOfBlocks, msg_length):
     Omessage = ''.join([chr(c) for c in dmes])
 
     print('\t\tExtraction COMPLETED')
+    end = time.perf_counter()
+    print(f"Time taken to extract message: {(end - start):.5f} seconds")  
     return Omessage
 
 def randKeys():
@@ -210,12 +204,19 @@ def randKeys():
     ss2 = round(ss2, 5)
     return ss1, ss2
 
+def imgcap(img):
+    height, width, channel = img.shape
+    img_size = height*width
+    image_cap = img_size/4
+    print(f'Image capacity: {image_cap} characters')
+
 def main():
     option = 88
     while option != 0:
         print("""
     1. Embed msg in image
     2. Extract msg from image
+    3. Show image capacity
     0. EXIT          
     """)
         option = int(input("select option: "))
@@ -224,8 +225,6 @@ def main():
             img_path = "shore_jpg.jpg"# input("image name: ")
             img = cv2.imread(img_path)  # Reading an image
             message = "yo yo yoooo it's your devy boyyy - viZzyyh"#input("message to embed: ")
-            msg_length = len(message)
-            print(msg_length)
             opKey = input("generate keys (y/n): ").lower()
             if opKey == "y":
                 print("\nSAVE THESE KEYS!")
@@ -257,7 +256,12 @@ def main():
             print("Extracted message: ", extract(img, xss1, xss2, xnumberOfBlocks, msg_length))
             end = time.perf_counter()
             print(f"Time taken to extract message: {(end - start):.3f} seconds")
-
+        
+        elif option == 3:
+            print("option 3 selected")
+            img_path = "shore_jpg.jpg"
+            img = cv2.imread(img_path)  # Reading an image
+            imgcap(img)
         else: 
             print("option 0 selected")
             continue
