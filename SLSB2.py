@@ -3,10 +3,45 @@ import time
 import numpy as np
 import random as rm
 
-def insert(img, message, ss1, ss2, numberOfBlocks):
-    height, width, channel = img.shape
-    img_size = height*width*channel
+def encrypt_img(img, key):
+    """
+    Encrypt image by shuffling pixels based on a key.
+    No permutation is returned — key must be reused for decryption.
+    """
+    h, w, c = img.shape
+    flat = img.reshape(-1, c)
+
+    rng = np.random.default_rng(seed=key)
+    shuffled = flat[rng.permutation(flat.shape[0])]
+    
+    return shuffled.reshape(h, w, c)
+
+def decrypt_img(scrambled_img, key):
+    """
+    Decrypt image that was shuffled using the same key.
+    """
+    h, w, c = scrambled_img.shape
+    flat = scrambled_img.reshape(-1, c)
+
+    rng = np.random.default_rng(seed=key)
+    perm = rng.permutation(flat.shape[0])
+    inv_perm = np.argsort(perm)
+
+    unshuffled = flat[inv_perm]
+    return unshuffled.reshape(h, w, c)
+
+def insert(image, message, ss1, ss2, numberOfBlocks):
+    height, width, channel = image.shape
+    img_size = height*width
     print(f'Image - height: {height} width: {width} channel: {channel} \nimage Size: {img_size}')                               # VERBOSE
+    
+    opEnc = input("Encrypt image (y/n): ").lower()
+    if opEnc == "y":
+        key = int(((ss1 + ss2)/0.04)*255)                    # generate key from ss1 and ss2 that ranges from 0 to 255
+        img = encrypt_img(image, key)
+        print("encrypted")
+    elif opEnc == "n":
+        print("encryption skipped")
 
     # 3d to 1d matrix
     flattenImg = img.flatten()
@@ -84,13 +119,16 @@ def insert(img, message, ss1, ss2, numberOfBlocks):
 
         binary_img[startRange:endRange] = lastImgBlock_1d
 
+        # Converting binary image to image
         start = time.perf_counter()
         pixel_values = np.array([int(pixel, 2) for pixel in binary_img], dtype=np.uint8)
         image = pixel_values.reshape((height, width, channel))
-
-        image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
         end = time.perf_counter()
         print(f'Time taken to convert binary image back to pixel values: {(end - start):.3f} seconds')                                                     # VERBOSE
+
+        if opEnc == "y":
+            image = decrypt_img(image, key)
+            print(f"key for dec:{key}")
 
         cv2.imwrite("stego.png", image)
         print("Image saved successfully")
@@ -98,10 +136,16 @@ def insert(img, message, ss1, ss2, numberOfBlocks):
         print('\t\tINSERTION COMPLETED')
         return 0
 
-def extract(img, xss1, xss2, xnumberOfBlocks, msg_length):    
-    height, width, channel = img.shape
-    img_size = height*width*channel
+def extract(image, xss1, xss2, xnumberOfBlocks, msg_length):    
+    height, width, channel = image.shape
+    img_size = height*width
     print(f'Image - height: {height} width: {width} channel: {channel} \nimage Size: {img_size}')                               # VERBOSE
+
+    opEnc = input("Encrypt image (y/n): ").lower()
+    if opEnc == "y":
+        key = int(((xss1 + xss2)/0.04)*255)                    # generate key from ss1 and ss2 that ranges from 0 to 255
+        img = encrypt_img(image, key)
+        print("encrypted")
 
     # 3d to 1d matrix
     flattenImg = img.flatten()
