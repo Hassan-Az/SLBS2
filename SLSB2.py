@@ -25,46 +25,48 @@ def decrypt_img(scrambled_img, key):
     unshuffled = flat[inv_perm]
     return unshuffled.reshape(h, w, c)
 
-def insert(image, message, ss1, ss2, numberOfBlocks):
+def insert(image, message, ss1, ss2, numberOfBlocks, verbose, opEnc="y"):
     height, width, channel = image.shape
     img_size = height*width
-    
-    opEnc = input("\n> Encrypt image (y/n): ").lower()
+        
     if opEnc == "y":
         key = int(((ss1 + ss2)/0.04)*255)                    # generate key from ss1 and ss2 that ranges from 0 to 255
         img = encrypt_img(image, key)
         print("+ Image encrypted")
     elif opEnc == "n":
         img = image
-        print("+ Encryption skipped\n")
-
-    start1 = time.perf_counter()
+        print("+ Encryption skipped\n")    
 
     # 3d to 1d matrix
-    print('+ processing - Flattening the Image from 3D to 1D', end="", flush=True)                                                                                 # VERBOSE
+    if verbose:
+        print('+ processing - Flattening the Image from 3D to 1D', end="", flush=True)                                      # VERBOSE
+        time.sleep(1)  # Adding a small delay for better readability in output
     flattenImg = img.flatten()
-    time.sleep(1)  # Adding a small delay for better readability in output
 
     # img to binary
-    print('\r+ processing - Converting flattened image to binary', end="", flush=True)                                 # VERBOSE
+    if verbose:
+        print('\r+ processing - Converting flattened image to binary', end="", flush=True)                                 # VERBOSE
+        time.sleep(1)  # Adding a small delay for better readability in output
     binary_img = np.vectorize(lambda x: format(x, '08b'))(flattenImg)
-    time.sleep(1)  # Adding a small delay for better readability in output
 
     # text to binary
-    print("\r+ processing - Converting text to binary           ", end="", flush=True)                                  # VERBOSE
+    if verbose:
+        print("\r+ processing - Converting text to binary           ", end="", flush=True)                                  # VERBOSE
+        time.sleep(1)  # Adding a small delay for better readability in output
     binary_msg = [format(ord(c), "08b") for c in message]
     msg_length = len(binary_msg)
-    time.sleep(1)  # Adding a small delay for better readability in output
 
-    print("\r+ processing - Completed                            ", end="", flush=True)                                 # VERBOSE
-    time.sleep(1)  # Adding a small delay for better readability in output
+    if verbose:
+        print("\r+ processing - Completed                            ", end="", flush=True)                                 # VERBOSE
+        time.sleep(1)  # Adding a small delay for better readability in output
 
     # assigning values for the PK component
     startPOS = int(ss1*img_size) + int(ss2*img_size)        # starting position in the image
     block_size = int(msg_length/numberOfBlocks)               # size of msg block 
     lastMsgBlock = msg_length - block_size * numberOfBlocks
     
-    print("\n+ Embedding message...")
+    if verbose:
+        print("\n+ Embedding message...")
     start = time.perf_counter()
     for i in range(numberOfBlocks):
         if block_size == 0:
@@ -83,8 +85,7 @@ def insert(image, message, ss1, ss2, numberOfBlocks):
 
         for binary in msgBlock_1d:                      # each value in 1d msg array is a single value
             for bit in binary:                          # and we need to split all the values to reshape into 2D
-                msgBlock_flat.append(int(bit))          # 1D msg array flattened, each bits is separated
-
+                msgBlock_flat.append(int(bit))          # 1D msg array flattened, each bits is separated        
         msgBlock_2d = np.array(msgBlock_flat).reshape(block_size*4, 2)   # 1D to 2D with 2 columns
 
         # inserting msg to image
@@ -119,31 +120,29 @@ def insert(image, message, ss1, ss2, numberOfBlocks):
         lastImgBlock_1d = np.array([''.join(map(str, row)) for row in lastImgBlock_2d])
 
         binary_img[startRange:endRange] = lastImgBlock_1d
-        end = time.perf_counter()
-        print(f"[+] Time taken to insert message: {(end - start):.5f} seconds")                                                                 # VERBOSE
+        end = time.perf_counter()        
+        print(f"[+] SLSB2 Time taken to insert message: {(end - start):.5f} seconds")                                             # VERBOSE
         print("+ Message embedded successfully")   
 
         # Converting binary image to image
-        print('\n+ processing - Converting binary image to 3d image ', end="", flush=True)
+        if verbose:
+            print('\n+ processing - Converting binary image to 3d image ', end="", flush=True)
         pixel_values = np.array([int(pixel, 2) for pixel in binary_img], dtype=np.uint8)
         image = pixel_values.reshape((height, width, channel))    
 
-        if opEnc == "y":
-            print("\r+ processing - Saving Decrypted Image               ", end="", flush=True)                                                                                                       # VERBOSE
+        if opEnc == "y":            
+            print("\r+ processing - Saving Decrypted Image               ", end="", flush=True)                             # VERBOSE
             image = decrypt_img(image, key)            
 
-        print("\r+ processing - Completed                            ", end="", flush=True)                                 # VERBOSE
+        if verbose:
+            print("\r+ processing - Completed                            ", end="", flush=True)                                 # VERBOSE
 
-        cv2.imwrite("stego.png", image)
-        end1 = time.perf_counter()
-        print(f"\n[+] Total time taken: {(end1 - start1):.5f} seconds")                                                                                                       # VERBOSE
-        return 0
+        return image
 
-def extract(image, xss1, xss2, xnumberOfBlocks, msg_length):    
+def extract(image, xss1, xss2, xnumberOfBlocks, msg_length, verbose, opEnc="y"):    
     height, width, channel = image.shape
     img_size = height*width
 
-    opEnc = input("\n> Encrypt image (y/n): ").lower()
     if opEnc == "y":
         key = int(((xss1 + xss2)/0.04)*255)                    # generate key from ss1 and ss2 that ranges from 0 to 255
         img = encrypt_img(image, key)
@@ -151,26 +150,28 @@ def extract(image, xss1, xss2, xnumberOfBlocks, msg_length):
     else:
         img = image
 
-    start = time.perf_counter()
-
     # 3d to 1d matrix
-    print('+ processing - Flattening the Image from 3D to 1D', end="", flush=True)                                                                                 # VERBOSE
+    if verbose:
+        print('+ processing - Flattening the Image from 3D to 1D', end="", flush=True)                                                                                 # VERBOSE
+        time.sleep(1)  # Adding a small delay for better readability in output
     flattenImg = img.flatten()
-    time.sleep(1)  # Adding a small delay for better readability in output
 
     # img to binary
-    print('\r+ processing - Converting flattened image to binary', end="", flush=True)
+    if verbose:
+        print('\r+ processing - Converting flattened image to binary', end="", flush=True)
+        time.sleep(1)  # Adding a small delay for better readability in output
     binary_img = np.vectorize(lambda x: format(x, '08b'))(flattenImg)
-    time.sleep(1)  # Adding a small delay for better readability in output
 
-    print("\r+ processing - Completed                            ", end="", flush=True)
-    time.sleep(1)  # Adding a small delay for better readability in output
+    if verbose:
+        print("\r+ processing - Completed                            ", end="", flush=True)
+        time.sleep(1)  # Adding a small delay for better readability in output
 
     xstartPOS = int(xss1*img_size) + int(xss2*img_size)        # starting position in the image
     xblock_size = int(msg_length/xnumberOfBlocks)               # size of msg block 
     xlastMsgBlock = msg_length - xblock_size * xnumberOfBlocks
 
-    print("\n+ Extracting message...")
+    if verbose:
+        print("\n+ Extracting message...")
     start = time.perf_counter()
     dmes = []
     for i in range(xnumberOfBlocks):
@@ -205,13 +206,12 @@ def extract(image, xss1, xss2, xnumberOfBlocks, msg_length):
         # Convert binary strings to decimal
         msgBlock = [int(''.join(bits), 2) for bits in msgBin]
         dmes.extend(msgBlock)
-
+    end = time.perf_counter()
+    print(f"[+] SLSB2 Time taken to extract message: {(end - start):.5f} seconds")                                             # VERBOSE
     # Convert decimal values to characters
     Omessage = ''.join([chr(c) for c in dmes])
 
     print('\n+ Extracted successfully')
-    end = time.perf_counter()
-    print(f"[+] Time taken to extract message: {(end - start):.5f} seconds")
     return Omessage
 
 def randKeys():
@@ -239,9 +239,9 @@ def main():
         option = int(input("> select option: "))
         if option == 1:
             print("+ option 1 selected")
-            img_path = "shore_jpg.jpg"# input("image name: ")
+            img_path = "cover_img/img8.bmp"# input("image name: ")
             img = cv2.imread(img_path)  # Reading an image
-            message = "yo yo yoooo it's your devy boyyy - viZzyyh"#input("message to embed: ")
+            message = "Don't let go! We changed our plans because of her late arrival. We must look at the problem from a global point of view. Tom handed Mary a check for half a million dollars. They will tear down the old building in two days Don't let go! We changed our plans because of her late arrival. We must look at the problem from a global point of view. Tom handed Mary a check for half a million dollars. They will tear down the old building in two days Don't let go! We changed our plans because of her late arrival. We must look at the problem from a global point of view. Tom handed Mary a check for half a million dollars. They will tear down the old building in two days Don't let go! We changed our plans because of her late arrival. We must look at the problem from a global point of view. Tom handed Mary a check for half a million dollars. They will tear down the old building in two days Don't let go! We changed our plans because of her late arrival. We must look at the problem from a global point of view. Tom handed Mary a check for half a million dollars. They will tear down the old building in two days Don't let go! We changed our plans because of her late arrival. We must look at the problem from a global point of view. Tom handed Mary a check for half a million dollars. They will tear down the old building in two days Don't let go! We changed our plans because of her late arrival. We must look at the problem from a global point of view. Tom handed Mary a check for half a million dollars. They will tear down the old building in two days Don't let go! We changed our plans because of her late arrival. We must look at the problem from a global point of view. Tom handed Mary a check for half a million dollars. They will tear down the old building in two days"
             opKey = input("\n> generate keys (y/n): ").lower()
             if opKey == "y":
                 print("____________________")
@@ -256,10 +256,12 @@ def main():
             else:
                 print("unknown command")
                 break
+            opEnc = input("\n> Encrypt image (y/n): ").lower()
             
             numberOfBlocks = 4
-            
-            insert(img, message, ss1, ss2, numberOfBlocks)
+
+            stego_img = insert(img, message, ss1, ss2, numberOfBlocks, verbose=True, opEnc=opEnc)
+            cv2.imwrite("stego.png", stego_img)
 
         elif option == 2:
             print("+ option 2 selected")
@@ -268,12 +270,12 @@ def main():
             xss1 = float(input("\n> enter key value 01: "))     # scaling step 1
             xss2 = float(input("> enter key value 02: "))    # scaling step 2
             xnumberOfBlocks = 4
-            msg_length = 42            
-            print("\n+ Extracted message: ", extract(img, xss1, xss2, xnumberOfBlocks, msg_length))
-        
+            msg_length = 42
+            print("\n+ Extracted message: ", extract(img, xss1, xss2, xnumberOfBlocks, msg_length, verbose=True, opEnc=opEnc))
+
         elif option == 3:
             print("+ option 3 selected")
-            img_path = "shore_jpg.jpg"
+            img_path = "shore.jpg"
             img = cv2.imread(img_path)  # Reading an image
             imgcap(img)
         else: 
