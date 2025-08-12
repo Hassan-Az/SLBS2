@@ -30,7 +30,7 @@ def insert(img, message, verbose=True):
             new_pixel = pixel_bin
         modified_pixels.append(new_pixel)
     end = time.perf_counter()
-    print(f"[+] LSB2 Time taken to embed message: {(end - start):.5f} seconds")                                             # VERBOSE
+    print(f"[+] LSB2 Time taken to embed message:     {(end - start):.5f} seconds")                                             # VERBOSE
     
     modified_flat = np.array([int(b, 2) for b in modified_pixels], dtype=np.uint8)
     stego_img = modified_flat.reshape(img.shape)
@@ -56,10 +56,10 @@ def extract(img, verbose=True):
         message += chr(int(c, 2))
         if message.endswith(DELIMITER):
             end = time.perf_counter()
-            print(f"[+] LSB2 Time taken to extract message: {(end - start):.5f} seconds")                                             # VERBOSE
+            print(f"[+] LSB2 Time taken to extract message:   {(end - start):.5f} seconds")                                             # VERBOSE
             return message[:-len(DELIMITER)]
     end = time.perf_counter()
-    print(f"[+] LSB2 Time taken to extract message: {(end - start):.5f} seconds")                                             # VERBOSE
+    print(f"[+] LSB2 Time taken to extract message:   {(end - start):.5f} seconds")                                             # VERBOSE
     return "[!] No valid message found."
 
 def main():
